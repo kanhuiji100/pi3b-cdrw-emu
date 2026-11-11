@@ -1,0 +1,10 @@
+/dts-v1/;
+/plugin/;
+
+/* Enable the 40-pin header I2C2 bus (physical pins 3/5, SDA.2/SCL.2).
+ * The vendor DTB leaves i2c@fe5b0000 disabled and its default pinctrl
+ * (i2c2m1) already maps GPIO4_B4/B5, so only status/speed are needed. */
+&i2c2 {
+    status = "okay";
+    clock-frequency = <400000>;
+};

@@ -1,0 +1,9 @@
+/dts-v1/;
+/plugin/;
+
+/* Switch the RK3566 USB2 OTG controller (the USB 2.0 port directly below the
+ * blue USB 3.0 port) from host mode to peripheral mode.  Applied at runtime
+ * by tools/enable-otg.sh; the dwc3 driver must be rebound afterwards. */
+&usb_host0_xhci {
+    dr_mode = "peripheral";
+};

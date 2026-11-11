@@ -1,0 +1,49 @@
+[Unit]
+Description=Orange Pi 3B USB CD/DVD/BD emulator
+Documentation=file:/opt/pi3b-cdrw/README.md
+After=local-fs.target sys-kernel-config.mount
+# Keep retrying if the OTG/UDC is not ready yet at boot.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/pi3b-cdrw
+StateDirectory=pi3b-cdrw
+StateDirectoryMode=0755
+
+# External-PC mode: turn the board's own OTG VBUS off before the peripheral
+# attaches, so only the PC drives VBUS on the A-A cable.
+ExecStartPre=/opt/pi3b-cdrw/tools/otg-vbus-off.sh
+# Vendor DTB boots the OTG controller as host; flip it to peripheral at boot.
+ExecStartPre=/opt/pi3b-cdrw/tools/enable-otg.sh
+# Optional 40-pin I2C2 for the SSD1306; failure must not block the drive.
+ExecStartPre=-/opt/pi3b-cdrw/tools/enable-i2c2.sh
+
+ExecStart=/opt/pi3b-cdrw/build/pi3b-cdrw-emu \
+    --root /var/lib/pi3b-cdrw \
+    --image /var/lib/pi3b-cdrw/discs/DISC01.BD \
+    --encoder \
+    --udc fcc00000.usb
+
+# The FunctionFS/BOT worker exits cleanly (status 0) when the USB host
+# disconnects or the UDC is disabled.  Restart unconditionally so the
+# gadget and the OLED/encoder UI come back without a shell.  A real
+# "systemctl stop" still stays stopped; this only affects unexpected or
+# clean worker exits.
+Restart=always
+RestartSec=2
+TimeoutStopSec=15
+KillSignal=SIGTERM
+UMask=0022
+SyslogIdentifier=pi3b-cdrw
+StandardOutput=journal
+StandardError=journal
+
+# EC11 with 2 transitions/detent? append --encoder-steps 2 to ExecStart.
+# Self-loop on the board's own USB3.0 host port instead?
+#   - comment out the otg-vbus-off.sh line above
+#   - run: sudo tools/otg-vbus-on.sh
+#   - connect the A-A cable between the blue USB3.0 and USB2.0 OTG ports
+
+[Install]
+WantedBy=multi-user.target

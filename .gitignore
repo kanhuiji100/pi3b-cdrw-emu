@@ -1,0 +1,8 @@
+build/
+discs/
+*.o
+*.pyc
+__pycache__/
+*.pcapng
+captures/
+.last_disc
