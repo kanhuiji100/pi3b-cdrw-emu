@@ -386,3 +386,31 @@ INFORMATION` 返回 complete track（flags `0xB1`）。真实 `fullformat.pcapng
 成功格式化后正是这个状态，随后 Windows 才发第一条 `WRITE(10)`；EMPTY
 和 INCOMPLETE 都不会触发写。CD/DVD 介质不再广告 BD profile；
 `READ FORMAT CAPACITIES` 返回 4 个描述符（含 574 MiB 的 10h）。
+
+
+## 8. 2026-11-11 当前状态（重要，接手前必读）
+
+真实 Windows Explorer “类似于 U 盘”完整格式化抓包（`fullformat.pcapng`）
+已证明流程是：
+
+```text
+BLANK (2/04/07 ~31s)
+FORMAT UNIT 295264 blocks (2/04/04 ~513s)
+READ DISC INFORMATION (34 bytes, 0x1E)
+READ TRACK INFORMATION (36 bytes, B1/02)
+WRITE(10) x170
+```
+
+模拟器目前已经对齐 BLANK/FORMAT 异步、A4、GET EVENT 0x5A/0x5E、
+DiscInfo 34/36、TOC lead-out/control、Track 36/48 和 295264 格式化容量，
+但 Windows 格式化器在 FORMAT 完成后仍然只轮询 TOC/AD，不发
+`READ TRACK`，也不发 `WRITE(10)`。10 分钟 FORMAT IN PROGRESS 已实测，
+仍不触发写。
+
+**不要**把 Linux `mkudffs` 或复制真实 UDF 的预格式化镜像当作修复：
+Windows 会把它识别成只读/已终结，显示 0 字节可用。真正的修复必须让
+Windows Explorer live-FS 格式化器进入 WRITE 阶段。详见根目录 `TODO.MD`
+的 P0 项。
+
+ImgBurn 多区段路径可用；`CLOSE TRACK/SESSION` function 2 已改为
+不 finalize（function 3 才 finalize），不要再回退。
